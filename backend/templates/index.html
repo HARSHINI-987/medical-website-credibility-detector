@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Website Credibility Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f4f8;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            text-align: center;
+            padding: 35px 20px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .input-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .input-card h2 {
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: #1a73e8;
+        }
+        .analyze-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .analyze-btn:hover {
+            background: #0d47a1;
+        }
+        .hint {
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-card {
+            display: none;
+            background: #fff3f3;
+            border: 2px solid #f44336;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #f44336;
+        }
+        .result-card {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .result-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .result-content {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .url-display {
+            font-size: 0.95rem;
+            color: #555;
+            word-break: break-all;
+        }
+        .url-display a {
+            color: #1a73e8;
+        }
+        .prediction-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px 20px;
+            border-radius: 10px;
+        }
+        .prediction-box.reliable {
+            background: #f0fff0;
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+        .prediction-box.unreliable {
+            background: #fff3f3;
+            color: #c62828;
+            border: 2px solid #f44336;
+        }
+        .confidence-section p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .confidence-bar {
+            width: 100%;
+            height: 14px;
+            background: #e0e0e0;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a73e8, #0d47a1);
+            border-radius: 7px;
+            transition: width 0.8s ease;
+        }
+        .confidence-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-top: 6px;
+        }
+        .text-preview {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #1a73e8;
+        }
+        .text-preview h3 {
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .text-preview p {
+            font-size: 0.88rem;
+            color: #666;
+            line-height: 1.6;
+        }
+        .result-message {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f0f4ff;
+            font-size: 0.95rem;
+            color: #333;
+            line-height: 1.5;
+        }
+        .history-btn-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .history-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .history-btn:hover {
+            background: #0d47a1;
+        }
+        .clear-btn {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .history-card {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .close-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .history-table th {
+            background: #1a73e8;
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .history-table tr:hover {
+            background: #f5f5f5;
+        }
+        .history-table a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .reliable-text {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .unreliable-text {
+            color: #c62828;
+            font-weight: bold;
+        }
+        .footer {
+            background: #0d47a1;
+            color: white;
+            text-align: center;
+            padding: 18px;
+            font-size: 0.88rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🏥 Medical Website Credibility Detector</h1>
+        <p>Detect whether a medical website is Reliable or Unreliable using TF-IDF & Random Forest</p>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+
+        <!-- Input Section -->
+        <div class="input-card">
+            <h2>🔗 Enter Medical Website URL</h2>
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="urlInput"
+                    placeholder="Enter URL (e.g. https://www.healthline.com/health/cancer)"
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button class="analyze-btn" onclick="analyzeURL()">🔍 Analyze</button>
+            </div>
+            <p class="hint">* Enter any medical website URL to check its credibility</p>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing website... Please wait...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error-card" id="errorCard">
+            <p id="errorMessage"></p>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-card" id="resultCard">
+            <h2>📊 Analysis Result</h2>
+            <div class="result-content">
+                <div class="url-display">
+                    <span>🔗 URL: </span>
+                    <a id="resultURL" href="#" target="_blank"></a>
+                </div>
+                <div class="prediction-box" id="predictionBox">
+                    <span id="predictionIcon"></span>
+                    <span id="predictionLabel"></span>
+                </div>
+                <div class="confidence-section">
+                    <p>Confidence Score</p>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <p class="confidence-value" id="confidenceValue"></p>
+                </div>
+                <div class="text-preview">
+                    <h3>📄 Extracted Text Preview:</h3>
+                    <p id="textPreview"></p>
+                </div>
+                <div class="result-message" id="resultMessage"></div>
+            </div>
+        </div>
+
+        <!-- History Buttons -->
+        <div class="history-btn-container">
+            <button class="history-btn" onclick="loadHistory()">📋 View History</button>
+            <button class="clear-btn" onclick="clearAll()">🗑️ Clear</button>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-card" id="historyCard">
+            <div class="history-header">
+                <h2>📋 Search History</h2>
+                <button class="close-btn" onclick="closeHistory()">✕ Close</button>
+            </div>
+            <div id="historyContent"></div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Medical Website Credibility Detector | TF-IDF + Random Forest | Mini Project</p>
+    </div>
+
+    <script>
+        async function analyzeURL() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                alert('Please enter a URL!');
+                return;
+            }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('errorCard').style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = '❌ ' + data.error;
+                    document.getElementById('errorCard').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('resultURL').textContent = data.url;
+                document.getElementById('resultURL').href = data.url;
+
+                const isReliable = data.prediction === 'Reliable';
+                document.getElementById('predictionIcon').textContent = isReliable ? '✅' : '❌';
+                document.getElementById('predictionLabel').textContent = data.prediction;
+
+                const box = document.getElementById('predictionBox');
+                box.className = 'prediction-box ' + (isReliable ? 'reliable' : 'unreliable');
+
+                document.getElementById('confidenceFill').style.width = data.confidence + '%';
+                document.getElementById('confidenceValue').textContent = data.confidence + '%';
+                document.getElementById('textPreview').textContent = data.text_preview;
+                document.getElementById('resultMessage').textContent = isReliable
+                    ? '✅ This medical website appears to be credible. It contains professionally written medical content.'
+                    : '⚠️ This medical website appears to be unreliable. It may contain misleading or unverified medical claims.';
+                document.getElementById('resultMessage').innerHTML += `
+                    <br><br>
+                    <strong>Verification Score:</strong> ${data.verification_score}<br>
+                    <strong>Final Credibility Score:</strong> ${data.final_score}%<br>
+                    <strong>Final Result:</strong> ${data.final_result}<br><br>
+
+                    <strong>Verification Checks:</strong>
+                    <ul>
+                       ${data.verification_checks.map(check => `<li>${check}</li>`).join('')}
+                    </ul>
+                `;
+                document.getElementById('resultCard').style.display = 'block';
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('errorMessage').textContent = '❌ Error connecting to server!';
+                document.getElementById('errorCard').style.display = 'block';
+            }
+        }
+
+        async function loadHistory() {
+            const response = await fetch('/history');
+            const data = await response.json();
+            let html = '';
+            if (data.length === 0) {
+                html = '<p style="text-align:center;color:#999;padding:20px;">No history found!</p>';
+            } else {
+                html = '<table class="history-table"><thead><tr><th>#</th><th>URL</th><th>Result</th><th>Confidence</th><th>Time</th></tr></thead><tbody>';
+                data.forEach((item, index) => {
+                    const isReliable = item.prediction === 'Reliable';
+                    html += `<tr>
+                        <td>${index + 1}</td>
+                        <td><a href="${item.url}" target="_blank">${item.url.substring(0, 40)}...</a></td>
+                        <td class="${isReliable ? 'reliable-text' : 'unreliable-text'}">${isReliable ? '✅' : '❌'} ${item.prediction}</td>
+                        <td>${item.confidence}%</td>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+            }
+            document.getElementById('historyContent').innerHTML = html;
+            document.getElementById('historyCard').style.display = 'block';
+        }
+
+        function closeHistory() {
+            document.getElementById('historyCard').style.display = 'none';
+        }
+
+        function clearAll() {
+            document.getElementById('urlInput').value = '';
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('errorCard').style.display = 'none';
+            document.getElementById('historyCard').style.display = 'none';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') analyzeURL();
+        }
+    </script>
+
+</body>
+</html>
